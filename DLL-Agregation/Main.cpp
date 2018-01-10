@@ -1,7 +1,4 @@
-#include <SFML/Graphics.hpp>
-#include <stdio.h>
-#include <stdlib.h>             /* srand, rand */
-#include <time.h>       /* time */
+#include <SFML/Graphics.hpp>s
 #include <vector>
 #include <iostream>
 
@@ -33,14 +30,36 @@ sf::CircleShape GetCircle() {
 	return circle;
 }
 
-int main(int argc, char *argv[]) {
+//Drawing from thread
+void renderingThread(sf::RenderWindow* window)
+{
+	sf::Event event;
+	sf::CircleShape circle = GetCircle();
+	while (window->isOpen())
+	{
+		
+		//draw..
+		window->draw(circle);
 
+		//end of the current frame
+		window->display();
+	}
+}
+
+int main(int argc, char *argv[]) {
 	//window initialization
 	sf::RenderWindow window(sf::VideoMode(800, 600), "My lalala");
 	window.setFramerateLimit(30);
 	window.setVerticalSyncEnabled(true);
-	
 
+	//deactiovation of OpenGL context - what does it mean?
+	//window.setActive(false);
+
+	//drawing thread initialization
+	sf::Thread thread(&renderingThread, &window);
+	//thread.launch();
+
+	
 	//input instaces
 	sf::Keyboard keyboard;
 	sf::Mouse mouse;
@@ -49,6 +68,7 @@ int main(int argc, char *argv[]) {
 	std::vector<sf::CircleShape> circle_stucked;
 
 	sf::CircleShape circle = GetCircle();
+
 
 	while (window.isOpen()) 
 	{
