@@ -146,6 +146,9 @@
   <ItemGroup>
     <Image Include="Assets\texture_1.jpg" />
   </ItemGroup>
+  <ItemGroup>
+    <Font Include="Assets\Windsong.ttf" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

@@ -33,7 +33,6 @@ sf::CircleShape GetCircle() {
 //Drawing from thread
 void renderingThread(sf::RenderWindow* window)
 {
-	sf::Event event;
 	sf::CircleShape circle = GetCircle();
 	while (window->isOpen())
 	{
@@ -64,10 +63,27 @@ int main(int argc, char *argv[]) {
 	sf::Keyboard keyboard;
 	sf::Mouse mouse;
 
+	//containers
 	std::vector<sf::CircleShape> circle_free;
 	std::vector<sf::CircleShape> circle_stucked;
 
+	//drawable obj
 	sf::CircleShape circle = GetCircle();
+	sf::Texture texture;
+	if (!texture.loadFromFile("Assets/texture_1.jpg"))
+	{
+		std::cout << "failed to load texture" << std::endl;
+		return 1;
+	}
+	texture.setSmooth(true);
+
+	//sprite
+	sf::Sprite sprite;
+	sprite.setTexture(texture);
+	sprite.setColor(sf::Color(255, 255, 200, 200));
+	sprite.setScale(sf::Vector2f(0.5f, 0.5f));
+
+	circle.setTexture(&texture);
 
 
 	while (window.isOpen()) 
@@ -135,6 +151,7 @@ int main(int argc, char *argv[]) {
 			std::cout << " left mouse pressed " << std::endl;
 		}
 
+		window.draw(sprite);
 		window.draw(circle);
 
 		window.display();
