@@ -1,6 +1,8 @@
-#include <SFML/Graphics.hpp>s
+#include <SFML/Graphics.hpp>
 #include <vector>
 #include <iostream>
+#include <thread>
+#include <math.h>
 
 
 sf::Vector2f RandomWalkShift() {
@@ -76,6 +78,39 @@ int main(int argc, char *argv[]) {
 		return 1;
 	}
 	texture.setSmooth(true);
+	sf::Font font;
+	if (!font.loadFromFile("Assets/Windsong.ttf"))
+	{	
+		std::cout << "failed to load font" << std::endl;
+		return 1;
+	}
+	sf::Text text;
+	text.setFont(font);
+	text.setString("VVasa i ja");
+	text.setCharacterSize(400);
+	text.setFillColor(sf::Color::Magenta);
+	text.setPosition(100, 100);
+
+	//Shapes
+	sf::CircleShape shape(50);
+	shape.setFillColor(sf::Color(100, 250, 50));
+	shape.setPosition(100, 100);
+	shape.setOutlineThickness(10);
+	shape.setOutlineColor(sf::Color(250, 150, 100));
+	shape.setTexture(&texture);
+
+	// create an empty shape
+	sf::ConvexShape convex;
+
+	// resize it to 5 points
+	convex.setPointCount(5);
+
+	// define the points
+	convex.setPoint(0, sf::Vector2f(300, 300));
+	convex.setPoint(1, sf::Vector2f(150, 10));
+	convex.setPoint(2, sf::Vector2f(120, 90));
+	convex.setPoint(3, sf::Vector2f(30, 100));
+	convex.setPoint(4, sf::Vector2f(0, 50));
 
 	//sprite
 	sf::Sprite sprite;
@@ -83,7 +118,23 @@ int main(int argc, char *argv[]) {
 	sprite.setColor(sf::Color(255, 255, 200, 200));
 	sprite.setScale(sf::Vector2f(0.5f, 0.5f));
 
+	sf::RectangleShape rectangle(sf::Vector2f(120, 50));
+	// change the size to 100x100
+	rectangle.setSize(sf::Vector2f(100, 100));
+
 	circle.setTexture(&texture);
+
+	//shaders
+	if (!sf::Shader::isAvailable())
+	{
+		std::cout << "shader isn't available!" << std::endl;
+		return 2;
+	}
+	sf::Shader shader;
+	if (!shader.loadFromFile("Assets/PixelateShader.vert", sf::Shader::Fragment))
+	{
+		std::cout << "shader loading failed" << std::endl;
+	}
 
 
 	while (window.isOpen()) 
@@ -151,8 +202,12 @@ int main(int argc, char *argv[]) {
 			std::cout << " left mouse pressed " << std::endl;
 		}
 
-		window.draw(sprite);
-		window.draw(circle);
+		window.draw(sprite, &shader);
+		window.draw(circle, &shader);
+		window.draw(text, &shader);
+		window.draw(shape, &shader);
+		window.draw(rectangle, &shader);
+		window.draw(convex, &shader);
 
 		window.display();
 	}

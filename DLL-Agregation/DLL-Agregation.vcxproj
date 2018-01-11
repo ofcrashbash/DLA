@@ -131,6 +131,7 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Assets\PixelateShader.vert" />
     <None Include="openal32.dll" />
     <None Include="sfml-audio-2.dll" />
     <None Include="sfml-audio-d-2.dll" />
