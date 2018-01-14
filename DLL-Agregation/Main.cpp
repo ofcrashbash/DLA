@@ -37,41 +37,41 @@ public:
 	{
 
 	}
-
 };
 
 class DLASimulation
 {
 	public:
-		DLASimulation(float width, float height, int N = 10)
+		DLASimulation(float w, float h, int N = 10)
 		{
+			ParticleNum = N;
+			width = w;
+			height = h;
+
 			//random generator initialization
 			time_t timer;
 			time(&timer);
 			srand(timer);
 
-			ParticleNum = N;
 			//free particles
 			for (int i = 0; i < N; i++) 
 			{
-
-				Particle freeParticle;
-				SetRandomPosition(freeParticle);
-				freeParts.push_back(freeParticle);
+				Particle particle;
+				SetRandomPosition(particle);
+				particles.push_back(particle);
 			}
 
 			//and one stucked particle
-			Particle stuckedParticle;
-			stuckedParticle.isStucked = true;
-			stuckedParticle.x = width / 2;
-			stuckedParticle.x = height / 2;
-			stuckedParts.push_back(stuckedParticle);
+			int stuckedParticleIndex = 0;
+			particles[stuckedParticleIndex].isStucked = true;
+			particles[stuckedParticleIndex].x = w / 2;
+			particles[stuckedParticleIndex].x = h / 2;
 		}
 
 
 		~DLASimulation()
 		{
-			//there is dynamic memory allocation
+			//there is no dynamic memory allocation
 		}
 
 
@@ -79,16 +79,17 @@ class DLASimulation
 		{
 			//O(n^2) solution at first
 			std::vector<Particle> colidedParticles;
-			for (auto &freeParticle : freeParts) 
+			for (auto &particle : particles)
 			{
-				if (CheckColisions(freeParticle))
+				if (CheckColisions(particle))
 				{
-					colidedParticles.push_back(freeParticle);
-					freeParticle.isStucked = true;
+					colidedParticles.push_back(particle);
+					particle.isStucked = true;
 				}
 				else 
 				{
-					RandMove(freeParticle);
+					RandMove(particle);
+					PeriodicalBoundaries(particle);
 				}
 			}
 		}
@@ -100,8 +101,9 @@ class DLASimulation
 			p.Move(ds * cos(phi), ds * sin(phi));
 		}
 
+		
 
-		std::vector<Particle> freeParts, stuckedParts;
+		std::vector<Particle> particles;
 		int ParticleNum = 10;
 
 	private:
@@ -124,32 +126,26 @@ class DLASimulation
 			p.x = RandNormal() * width;
 			p.y = RandNormal() * height;
 		}
+
+		void PeriodicalBoundaries(Particle &p)
+		{
+			if (p.x < 0)
+				p.x += width;
+			else if (p.x >= width)
+				p.x -= width;
+
+			if (p.y < 0)
+				p.y += height;
+			else if (p.y >= height)
+				p.y -= height;
+		}
 };
 
-sf::CircleShape GetCircle(sf::Vector2u window_size) {
-	sf::CircleShape circle;
-	sf::Color fill_color = sf::Color(255, 0, 0, 200);
-	sf::Color outline_color = sf::Color(255, 255, 255, 255);
-	circle.setFillColor(fill_color);
-	circle.setRadius(10);
-	circle.setOutlineColor(outline_color);
-	circle.setOutlineThickness(2);
-	return circle;
-}
-
-sf::CircleShape ParticleToCircleShape(Particle &p)
+void Update(sf::Vertex &vertex, Particle &particle)
 {
-	sf::CircleShape circle;
-	circle.setPosition(p.x, p.y);
-	circle.setRadius(p.r);
-	circle.setFillColor(sf::Color::Blue);
-	circle.setOutlineColor(sf::Color::Cyan);
-	return circle;
-}
-
-void Update(sf::CircleShape &circle, Particle &particle)
-{
-	circle.setPosition(particle.x, particle.y);
+	vertex.position.x = particle.x;
+	vertex.position.y = particle.y;
+	vertex.color = sf::Color::Yellow;
 }
 
 //Drawing from thread
@@ -158,19 +154,16 @@ void GraphicalThread(sf::RenderWindow *window, DLASimulation *DLAObj)
 	std::cout << "Render Thread" << std::endl;
 
 	const int n = DLAObj->ParticleNum;
-	std::vector<sf::CircleShape> circles;
-	for (int i = 0; i < n; i++)
-		circles.push_back(ParticleToCircleShape(DLAObj->freeParts[i]));
+	sf::VertexArray points(sf::Points, n);
 
 	while (window->isOpen())
 	{
 		window->clear(sf::Color::Black);
 		//draw..
 		for (int i = 0; i < n; i++)
-		{
-			window->draw(circles[i]);
-			Update(circles[i], DLAObj->freeParts[i]);
-		}
+			Update(points[i], DLAObj->particles[i]);
+
+		window->draw(points);
 
 		//end of the current frame
 		window->display();
@@ -183,7 +176,7 @@ void DLASimulationThread(DLASimulation const & refDLAObj)
 	std::cout << "DLA thread" << std::endl;
 
 	DLASimulation & DLAObj = const_cast<DLASimulation &>(refDLAObj);//wtf construction
-	while (!DLAObj.freeParts.empty())
+	while (!DLAObj.particles.empty())
 		DLAObj.Simulate();
 }
 
@@ -191,7 +184,7 @@ void DLASimulationThread(DLASimulation const & refDLAObj)
 int main(int argc, char * argv[]) 
 {
 	//window size
-	int width = 1000, height = 700, N = 30;
+	int width = 1000, height = 700, N = 10000;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N);
@@ -228,6 +221,7 @@ int main(int argc, char * argv[])
 		}
 	}
 
-	DLAThread.detach();
+	DLAThread.join();
+
 	return 0;
 }
