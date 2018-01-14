@@ -1,11 +1,10 @@
 #define _USE_MATH_DEFINES
 
+#include <cstdlib>
 #include <SFML/Graphics.hpp>
 #include <vector>
 #include <iostream>
 #include <thread>
-
-#include <cstdlib>
 #include <cmath>
 
 
@@ -14,8 +13,9 @@ public:
 	float x = 0., y = 0., r = 10., m = 1.;
 	bool isStucked = false;
 	
-	Particle() 
+	Particle()
 	{
+
 	}
 
 	Particle(float xpos, float ypos)
@@ -23,9 +23,7 @@ public:
 		x = xpos; y = ypos;
 	}
 
-	~Particle()
-	{
-	}
+	~Particle(){}
 
 	void Move(float dx, float dy)
 	{
@@ -33,16 +31,14 @@ public:
 		y += dy;
 	}
 
-	void CollisionTrig(Particle &p)
-	{
-
-	}
+	void CollisionTrig(Particle &p){}
 };
+
 
 class DLASimulation
 {
 	public:
-		DLASimulation(float w, float h, int N = 10)
+		DLASimulation(float w, float h, int N)
 		{
 			ParticleNum = N;
 			width = w;
@@ -78,12 +74,13 @@ class DLASimulation
 		void Simulate()
 		{
 			//O(n^2) solution at first
-			std::vector<Particle> colidedParticles;
 			for (auto &particle : particles)
 			{
+				if (particle.isStucked)
+					continue;
+
 				if (CheckColisions(particle))
 				{
-					colidedParticles.push_back(particle);
 					particle.isStucked = true;
 				}
 				else 
@@ -94,13 +91,6 @@ class DLASimulation
 			}
 		}
 
-
-		void RandMove(Particle &p)
-		{
-			float phi = 2. * M_PI * (float)RandNormal();
-			p.Move(ds * cos(phi), ds * sin(phi));
-		}
-
 		
 
 		std::vector<Particle> particles;
@@ -108,11 +98,23 @@ class DLASimulation
 
 	private:
 
+		void RandMove(Particle &p)
+		{
+			float phi = 2. * M_PI * (float)RandNormal();
+			p.Move(ds * cos(phi), ds * sin(phi));
+		}
+
 		float ds = 1., reactionRad = 10.;
 		float width, height;
 
+		float Distance(Particle &p1, Particle &p2) 
+		{
+			return sqrt((p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y));
+		}
+
 		bool CheckColisions(Particle &p)
 		{
+
 			return false;
 		}
 
@@ -141,12 +143,14 @@ class DLASimulation
 		}
 };
 
+
 void Update(sf::Vertex &vertex, Particle &particle)
 {
 	vertex.position.x = particle.x;
 	vertex.position.y = particle.y;
 	vertex.color = sf::Color::Yellow;
 }
+
 
 //Drawing from thread
 void GraphicalThread(sf::RenderWindow *window, DLASimulation *DLAObj)
@@ -184,7 +188,7 @@ void DLASimulationThread(DLASimulation const & refDLAObj)
 int main(int argc, char * argv[]) 
 {
 	//window size
-	int width = 1000, height = 700, N = 10000;
+	int width = 1000, height = 700, N = 100;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N);
