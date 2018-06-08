@@ -6,149 +6,18 @@
 #include <iostream>
 #include <thread>
 #include <cmath>
+#include "DLA.h"
 
-
-class Particle {
-public:
-	float x = 0., y = 0., r = 10., m = 1.;
-	bool isStucked = false;
-	
-	Particle()
-	{
-
-	}
-
-	Particle(float xpos, float ypos)
-	{
-		x = xpos; y = ypos;
-	}
-
-	~Particle(){}
-
-	void Move(float dx, float dy)
-	{
-		x += dx;
-		y += dy;
-	}
-
-	void CollisionTrig(Particle &p){}
-};
-
-
-class DLASimulation
-{
-	public:
-		DLASimulation(float w, float h, int N)
-		{
-			ParticleNum = N;
-			width = w;
-			height = h;
-
-			//random generator initialization
-			time_t timer;
-			time(&timer);
-			srand(timer);
-
-			//free particles
-			for (int i = 0; i < N; i++) 
-			{
-				Particle particle;
-				SetRandomPosition(particle);
-				particles.push_back(particle);
-			}
-
-			//and one stucked particle
-			int stuckedParticleIndex = 0;
-			particles[stuckedParticleIndex].isStucked = true;
-			particles[stuckedParticleIndex].x = w / 2;
-			particles[stuckedParticleIndex].x = h / 2;
-		}
-
-
-		~DLASimulation()
-		{
-			//there is no dynamic memory allocation
-		}
-
-
-		void Simulate()
-		{
-			//O(n^2) solution at first
-			for (auto &particle : particles)
-			{
-				if (particle.isStucked)
-					continue;
-
-				if (CheckColisions(particle))
-				{
-					particle.isStucked = true;
-				}
-				else 
-				{
-					RandMove(particle);
-					PeriodicalBoundaries(particle);
-				}
-			}
-		}
-
-		
-
-		std::vector<Particle> particles;
-		int ParticleNum = 10;
-
-	private:
-
-		void RandMove(Particle &p)
-		{
-			float phi = 2. * M_PI * (float)RandNormal();
-			p.Move(ds * cos(phi), ds * sin(phi));
-		}
-
-		float ds = 1., reactionRad = 10.;
-		float width, height;
-
-		float Distance(Particle &p1, Particle &p2) 
-		{
-			return sqrt((p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y));
-		}
-
-		bool CheckColisions(Particle &p)
-		{
-
-			return false;
-		}
-
-		float RandNormal()
-		{
-			return (float)rand() / RAND_MAX;
-		}
-
-		void SetRandomPosition(Particle& p)
-		{
-			p.x = RandNormal() * width;
-			p.y = RandNormal() * height;
-		}
-
-		void PeriodicalBoundaries(Particle &p)
-		{
-			if (p.x < 0)
-				p.x += width;
-			else if (p.x >= width)
-				p.x -= width;
-
-			if (p.y < 0)
-				p.y += height;
-			else if (p.y >= height)
-				p.y -= height;
-		}
-};
-
+//TODO improve perfomance by providing array
 
 void Update(sf::Vertex &vertex, Particle &particle)
 {
 	vertex.position.x = particle.x;
 	vertex.position.y = particle.y;
-	vertex.color = sf::Color::Yellow;
+	if(particle.isStucked)
+		vertex.color = sf::Color::White;
+	else 
+		vertex.color = sf::Color::Red;
 }
 
 
@@ -188,15 +57,17 @@ void DLASimulationThread(DLASimulation const & refDLAObj)
 int main(int argc, char * argv[]) 
 {
 	//window size
-	int width = 1000, height = 700, N = 100;
+	float r = 2.;
+	int width = 500 * r, height = 500 * r, N = 10000;
 
 	//DLA simulation intitalization
-	DLASimulation DLAObj((float)width, (float)height, N);
-
+	DLASimulation DLAObj((float)width, (float)height, N, r);
+	//Window initialization
+	sf::RenderWindow window(sf::VideoMode(width, height), "Diffuse Limited Agregation");
 
 
 	//main window initialization
-	sf::RenderWindow window(sf::VideoMode(width, height), "My lalala");
+
 	window.setFramerateLimit(30);
 	window.setVerticalSyncEnabled(true);
 	window.setActive(false);
