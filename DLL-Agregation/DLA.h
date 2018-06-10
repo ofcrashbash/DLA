@@ -13,7 +13,7 @@ public:
 
 	Particle()
 	{
-
+		int i = 0;
 	}
 
 	Particle(float xpos, float ypos)
