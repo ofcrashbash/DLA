@@ -7,17 +7,15 @@
 #include <thread>
 #include <cmath>
 #include "DLA.h"
+#include <mutex>
 
-//TODO improve perfomance by providing array
+std::mutex mtx;
 
-void Update(sf::Vertex &vertex, Particle &particle)
+void Update(sf::Vertex &vertex, Particle &particle, sf::Color color)
 {
 	vertex.position.x = particle.x;
 	vertex.position.y = particle.y;
-	if(particle.isStucked)
-		vertex.color = sf::Color::White;
-	else 
-		vertex.color = sf::Color::Red;
+	vertex.color      = color;
 }
 
 
@@ -26,15 +24,21 @@ void GraphicalThread(sf::RenderWindow *window, DLASimulation *DLAObj)
 {	
 	std::cout << "Render Thread" << std::endl;
 
-	const int n = DLAObj->ParticleNum;
-	sf::VertexArray points(sf::Points, n);
+	sf::VertexArray points(sf::Points, DLAObj->ParticleNum);
 
 	while (window->isOpen())
 	{
 		window->clear(sf::Color::Black);
 		//draw..
-		for (int i = 0; i < n; i++)
-			Update(points[i], DLAObj->particles[i]);
+		mtx.lock();
+		auto n = DLAObj->free_particles.size();
+		for (unsigned int i = 0; i < n; ++i)
+			Update(points[i], DLAObj->free_particles[i], sf::Color::White);
+
+		auto m = DLAObj->stucked_particles.size();
+		for (auto i = n; i < m + n; ++i)
+			Update(points[i], DLAObj->stucked_particles[i - n], sf::Color::Red);
+		mtx.unlock();
 
 		window->draw(points);
 
@@ -48,17 +52,21 @@ void DLASimulationThread(DLASimulation const & refDLAObj)
 {
 	std::cout << "DLA thread" << std::endl;
 
-	DLASimulation & DLAObj = const_cast<DLASimulation &>(refDLAObj);//wtf construction
-	while (!DLAObj.particles.empty())
+	DLASimulation & DLAObj = const_cast<DLASimulation &>(refDLAObj);//TODO wtf construction
+	while (!DLAObj.free_particles.empty())
+	{
+		mtx.lock();
 		DLAObj.Simulate();
+		mtx.unlock();
+	}
 }
 
 
 int main(int argc, char * argv[]) 
 {
 	//window size
-	float r = 2.;
-	int width = 500 * r, height = 500 * r, N = 10000;
+	float r = 20.;
+	int width = 50 * r, height = 50 * r, N = 100;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N, r);
@@ -77,6 +85,7 @@ int main(int argc, char * argv[])
 	thread.launch();
 
 	//DLA simulation thread starting
+	//TODO why i used one staandard thread and one from sfml?????
 	std::thread DLAThread(DLASimulationThread, std::ref(DLAObj));
 
 	//SFLM event loop

@@ -5,11 +5,11 @@ using particle_map_el = struct {
 	Particle* particles[6] = { NULL, NULL, NULL, NULL, NULL, NULL };
 	unsigned short int part_count = 6;
 };
-
+//TODO try to inherit this class from sf::Vertex or other
+//!!!!!!! it will resolve problem with mutexes!! 
 class Particle {
 public:
 	float x = 0., y = 0., r = 10., m = 1.;
-	bool isStucked = false;
 
 	Particle()
 	{
@@ -51,9 +51,14 @@ public:
 	}
 
 	void Stuck()
+	{}
+
+	friend std::ostream& operator<<(std::ostream& os, Particle const& particle) 
 	{
-		this->isStucked = true;
+		os << "coords - " << particle.x << ", " << particle.y << std::endl;
+
 	}
+
 
 	bool CollisionTrig(Particle &p)
 	{
@@ -72,7 +77,8 @@ class DLASimulation
 {
 public:
 
-	std::vector<Particle> particles;
+	std::vector<Particle> free_particles;
+	std::vector<Particle> stucked_particles;
 	int ParticleNum = 10;
 
 	DLASimulation(float w, float h, int N, float r): ParticleNum(N), width(w), height(h), reactionRad(r)
@@ -89,66 +95,74 @@ public:
 			particle_map[i] = new particle_map_el[m];
 		}
 
+		//reserving memory for particle containers
+		free_particles.reserve(ParticleNum);
+		stucked_particles.reserve(ParticleNum);
+
 		//random generator initialization
 		time_t timer;
 		time(&timer);
 		srand(timer);
 
 		//free particles initialization
-		for (int i = 0; i < N; i++)
+		for (int i = 0; i < N - 1; i++)
 		{
 			Particle particle;
 			float x, y;
 			GetRandomPosition(&x, &y);
 			particle.SetPosition(x, y);
-			particles.push_back(particle);
+			free_particles.push_back(particle);
 		}
 		//and one stucked particle
 		int stuckedParticleIndex = 0;
-		particles[stuckedParticleIndex].Stuck();
-		particles[stuckedParticleIndex].SetPosition(w / 2., h / 2.);
-		
+		Particle particle;
+		particle.SetPosition(w / 2., h / 2.);
 		//checking position of initial stucked particle in particle map
-		ChecoutNewParticle(&particles[stuckedParticleIndex]);
+		ChecoutNewParticle(particle);
 	}
-
 
 	~DLASimulation()
 	{
 		
-		for (int i = 0; i < height; ++i)
+		for (int i = 0; i < m; ++i)
 			delete[] particle_map[i];
 		delete[] particle_map;
 
 	}
 
-
 	void Simulate()
 	{
-		//O(n^2) solution at first
-		for (auto &particle : particles)
-		{
+		
+		std::vector<int> particles_index_to_remove;
 
-			//We don't use stucked particles for further simulation
-			if (particle.isStucked)
-				continue;
-			//TODO add praticle_map functionality here
+		int i = 0;
+		for (auto &particle : free_particles)
+		{
+			//std::cout << free_particles << std::endl;
+
+			PeriodicalBoundaries(&particle.x, &particle.y);
+
 			if (auto target_particle = CheckColisions(particle))
 			{
 				
 				if (particle.CollisionTrig(*target_particle))
 				{
 					particle.Stuck();
-					ChecoutNewParticle(&particle);
+					ChecoutNewParticle(particle);
+					particles_index_to_remove.push_back(i);
 				}
 				
 			}
 			else
-			{
 				particle.Move(RandMove());
-				PeriodicalBoundaries(&particle.x, &particle.y);
-			}
+
+			++i;
 		}
+
+		//remove stucked particles from free_particle array
+		for (auto index : particles_index_to_remove)
+			free_particles.erase(free_particles.begin() + index);
+
 	}
 
 
@@ -180,7 +194,7 @@ private:
 			auto adjacent_particles = GetAdjacentParticles(i, j);
 			for (auto particle : adjacent_particles)
 			{
-				if (particle != &p && Distance(p, *particle) <= reactionRad && particle->isStucked)
+				if (particle != &p && Distance(p, *particle) <= reactionRad)
 				{
 					return particle;
 				}
@@ -247,11 +261,17 @@ private:
 		}
 	}
 
-	void ChecoutNewParticle(Particle* p)
+	void ChecoutNewParticle(Particle p)
 	{
 		
 		float x_loc, y_loc;
-		GetLocalCoords(p->x, p->y, &x_loc, &y_loc);
+		GetLocalCoords(p.x, p.y, &x_loc, &y_loc);
+
+		//adding stucked particle to stucked_particles array
+		stucked_particles.push_back(p);
+		//we should now get pointer from new place.. 
+		//from stucked_particle vector.. not from free_particles
+		auto particle_pointer = &stucked_particles.back();
 		
 		int di = 0; 
 		if (x_loc <= reactionRad / 2.)
@@ -273,15 +293,15 @@ private:
 
 
 		int i, j;
-		CoordsToIndexes(p->x, p->y, &i, &j);
+		CoordsToIndexes(p.x, p.y, &i, &j);
 
 		//checking out current cell
 		particle_map[i][j].isStucked = true;
-		AddPointer(p, i, j);
+		AddPointer(particle_pointer, i, j);
 
 		//checking out left or right cell if it isn't out of bounds
 		if (i + di >= 0 && i + di < n)
-			AddPointer(p, i + di, j);
+			particle_map[i + di][j].isStucked = true;
 
 		//checking out top or bottom cell if it isn't out of bounds
 		if (j + dj >= 0 && j + dj < n)
@@ -293,7 +313,7 @@ private:
 			particle_map[i + di][j + dj].isStucked = true;
 	}
 
-	void AddPointer(Particle* p, int i, int j)
+	void AddPointer(Particle *p, int i, int j)
 	{
 		for (int k = 0; k < particle_map[i][j].part_count; ++k)
 			if (particle_map[i][j].particles[k] == NULL)
@@ -306,9 +326,6 @@ private:
 	std::vector<Particle*> GetAdjacentParticles(int i, int j)
 	{
 
-		//TODO google for std permutations
-		//TODO implement this function
-		//particle_map[i][j].particles
 		std::vector<Particle*> adjacent_particles;
 		for(int di = -1; di <= 1; ++di)
 			for(int dj = -1; dj <= 1; ++dj)
