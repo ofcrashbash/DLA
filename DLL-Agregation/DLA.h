@@ -13,7 +13,7 @@ public:
 
 	Particle()
 	{
-		int i = 0;
+		
 	}
 
 	Particle(float xpos, float ypos)
@@ -79,9 +79,10 @@ public:
 
 	std::vector<Particle> free_particles;
 	std::vector<Particle> stucked_particles;
+	sf::VertexArray drawable_particles;
 	int ParticleNum = 10;
 
-	DLASimulation(float w, float h, int N, float r): ParticleNum(N), width(w), height(h), reactionRad(r)
+	DLASimulation(float w, float h, int N, float r): ParticleNum(N), width(w), height(h), reactionRad(r), ds(r / 2.)
 	{
 
 		//array initialization
@@ -98,12 +99,13 @@ public:
 		//reserving memory for particle containers
 		free_particles.reserve(ParticleNum);
 		stucked_particles.reserve(ParticleNum);
+		drawable_particles = sf::VertexArray(sf::Points, ParticleNum);
 
 		//random generator initialization
 		time_t timer;
 		time(&timer);
 		srand(timer);
-
+		
 		//free particles initialization
 		for (int i = 0; i < N - 1; i++)
 		{
@@ -135,7 +137,7 @@ public:
 		
 		std::vector<int> particles_index_to_remove;
 
-		int i = 0;
+		int index_of_removable = 0;
 		for (auto &particle : free_particles)
 		{
 			//std::cout << free_particles << std::endl;
@@ -149,19 +151,37 @@ public:
 				{
 					particle.Stuck();
 					ChecoutNewParticle(particle);
-					particles_index_to_remove.push_back(i);
+					particles_index_to_remove.push_back(index_of_removable);
 				}
 				
 			}
 			else
 				particle.Move(RandMove());
 
-			++i;
+			++index_of_removable;
 		}
 
 		//remove stucked particles from free_particle array
 		for (auto index : particles_index_to_remove)
 			free_particles.erase(free_particles.begin() + index);
+
+		//update drawable array of particles
+		int freeParticleCount = free_particles.size();
+		for (int k = 0; k < ParticleNum; ++k)
+		{
+			if (k < freeParticleCount)
+			{
+				drawable_particles[k].position.x = free_particles[k].x;
+				drawable_particles[k].position.y = free_particles[k].y;
+				drawable_particles[k].color = sf::Color::White;
+			}
+			else
+			{
+				drawable_particles[k].position.x = stucked_particles[k - freeParticleCount].x;
+				drawable_particles[k].position.y = stucked_particles[k - freeParticleCount].y;
+				drawable_particles[k].color = sf::Color::Red;
+			}
+		}
 
 	}
 
