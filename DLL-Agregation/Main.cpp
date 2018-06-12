@@ -48,10 +48,12 @@ int main(int argc, char * argv[])
 {
 	//window size
 	float r = 1.;
-	int width = 1000 * r, height = 1000 * r, N = 100000;
+	int width = 1000 * r, height = 1000 * r, N = 200;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N, r);
+
+
 	//Window initialization
 	sf::RenderWindow window(sf::VideoMode(width, height), "Diffuse Limited Agregation");
 
