@@ -1,12 +1,11 @@
 class Particle;
-//TODO create array of stucked particles and free
+
 using particle_map_el = struct {
 	bool isStucked = false;
 	Particle* particles[6] = { NULL, NULL, NULL, NULL, NULL, NULL };
 	unsigned short int part_count = 6;
 };
-//TODO try to inherit this class from sf::Vertex or other
-//!!!!!!! it will resolve problem with mutexes!! 
+
 class Particle {
 public:
 	float x = 0., y = 0., r = 10., m = 1.;
@@ -134,7 +133,9 @@ public:
 
 	void Simulate()
 	{
-		
+		//TODO what if we at first move all particles simultaneously and after that only check
+		//TODO colision condition??
+
 		std::vector<int> particles_index_to_remove;
 
 		int index_of_removable = 0;
@@ -203,7 +204,6 @@ private:
 	}
 	
 
-	//TODO modify this function by using particle_map
 	Particle* CheckColisions(Particle &p)
 	{
 		int i, j;

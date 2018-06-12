@@ -14,21 +14,24 @@ std::mutex mtx;
 
 
 //Drawing from thread
-void GraphicalThread(sf::RenderWindow *window, DLASimulation *DLAObj)
+void GraphicalThread(DLASimulation const & refDLAObj, sf::RenderWindow const & refWindow)
 {	
 	std::cout << "Render Thread" << std::endl;
 
-	sf::VertexArray points(sf::Points, DLAObj->ParticleNum);
+	DLASimulation & DLAObj = const_cast<DLASimulation &>(refDLAObj);//TODO wtf construction
+	sf::RenderWindow &window = const_cast<sf::RenderWindow &>(refWindow);
 
-	while (window->isOpen())
+	sf::VertexArray points(sf::Points, DLAObj.ParticleNum);
+
+	while (window.isOpen())
 	{
-		window->clear(sf::Color::Black);
-		//draw..
+		window.clear(sf::Color::Black);
 
-		window->draw(DLAObj->drawable_particles);
+		//draw..
+		window.draw(DLAObj.drawable_particles);
 
 		//end of the current frame
-		window->display();
+		window.display();
 	}
 }
 
@@ -47,29 +50,25 @@ void DLASimulationThread(DLASimulation const & refDLAObj, sf::RenderWindow const
 int main(int argc, char * argv[]) 
 {
 	//window size
-	float r = 1.;
-	int width = 1000 * r, height = 1000 * r, N = 200;
+	float r = 5.;
+	int width = 200 * r, height = 200 * r, N = 5000;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N, r);
-
 
 	//Window initialization
 	sf::RenderWindow window(sf::VideoMode(width, height), "Diffuse Limited Agregation");
 
 
 	//main window initialization
-
 	window.setFramerateLimit(30);
 	window.setVerticalSyncEnabled(true);
 	window.setActive(false);
 	
 	//render thread initialzaization
-	sf::Thread thread(std::bind(&GraphicalThread, &window, &DLAObj));
-	thread.launch();
+	std::thread GrahicThread(GraphicalThread, std::ref(DLAObj), std::ref(window));
 
 	//DLA simulation thread starting
-	//TODO why i used one staandard thread and one from sfml?????
 	std::thread DLAThread(DLASimulationThread, std::ref(DLAObj), std::ref(window));
 
 	//SFLM event loop
@@ -90,6 +89,7 @@ int main(int argc, char * argv[])
 	}
 
 	DLAThread.join();
+	GrahicThread.join();
 
 	return 0;
 }
