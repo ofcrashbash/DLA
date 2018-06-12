@@ -11,12 +11,6 @@
 
 std::mutex mtx;
 
-void Update(sf::Vertex &vertex, Particle &particle, sf::Color color)
-{
-	vertex.position.x = particle.x;
-	vertex.position.y = particle.y;
-	vertex.color      = color;
-}
 
 
 //Drawing from thread
@@ -30,17 +24,8 @@ void GraphicalThread(sf::RenderWindow *window, DLASimulation *DLAObj)
 	{
 		window->clear(sf::Color::Black);
 		//draw..
-		mtx.lock();
-		auto n = DLAObj->free_particles.size();
-		for (unsigned int i = 0; i < n; ++i)
-			Update(points[i], DLAObj->free_particles[i], sf::Color::White);
 
-		auto m = DLAObj->stucked_particles.size();
-		for (auto i = n; i < m + n; ++i)
-			Update(points[i], DLAObj->stucked_particles[i - n], sf::Color::Red);
-		mtx.unlock();
-
-		window->draw(points);
+		window->draw(DLAObj->drawable_particles);
 
 		//end of the current frame
 		window->display();
@@ -48,28 +33,27 @@ void GraphicalThread(sf::RenderWindow *window, DLASimulation *DLAObj)
 }
 
 
-void DLASimulationThread(DLASimulation const & refDLAObj)
+void DLASimulationThread(DLASimulation const & refDLAObj, sf::RenderWindow const & refWindow)
 {
 	std::cout << "DLA thread" << std::endl;
 
 	DLASimulation & DLAObj = const_cast<DLASimulation &>(refDLAObj);//TODO wtf construction
-	while (!DLAObj.free_particles.empty())
-	{
-		mtx.lock();
+	sf::RenderWindow &window = const_cast<sf::RenderWindow &>(refWindow);
+	while (!DLAObj.free_particles.empty() && window.isOpen())
 		DLAObj.Simulate();
-		mtx.unlock();
-	}
 }
 
 
 int main(int argc, char * argv[]) 
 {
 	//window size
-	float r = 20.;
-	int width = 50 * r, height = 50 * r, N = 100;
+	float r = 1.;
+	int width = 1000 * r, height = 1000 * r, N = 200;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N, r);
+
+
 	//Window initialization
 	sf::RenderWindow window(sf::VideoMode(width, height), "Diffuse Limited Agregation");
 
@@ -86,7 +70,7 @@ int main(int argc, char * argv[])
 
 	//DLA simulation thread starting
 	//TODO why i used one staandard thread and one from sfml?????
-	std::thread DLAThread(DLASimulationThread, std::ref(DLAObj));
+	std::thread DLAThread(DLASimulationThread, std::ref(DLAObj), std::ref(window));
 
 	//SFLM event loop
 	while (window.isOpen())
