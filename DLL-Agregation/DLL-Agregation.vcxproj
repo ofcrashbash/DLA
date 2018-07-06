@@ -205,6 +205,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="DLA.h" />
+    <ClInclude Include="Effect.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="blur.frag" />
+    <None Include="wave.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

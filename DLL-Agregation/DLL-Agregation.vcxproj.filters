@@ -23,5 +23,16 @@
     <ClInclude Include="DLA.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Effect.hpp">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="blur.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="wave.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
