@@ -7,11 +7,10 @@
 #include <thread>
 #include <cmath>
 #include "DLA.h"
+#include "Effect.hpp"
 #include <mutex>
 
 std::mutex mtx;
-
-
 
 //Drawing from thread
 void GraphicalThread(DLASimulation const & refDLAObj, sf::RenderWindow const & refWindow)
@@ -23,8 +22,24 @@ void GraphicalThread(DLASimulation const & refDLAObj, sf::RenderWindow const & r
 
 	sf::VertexArray points(sf::Points, DLAObj.ParticleNum);
 
+	//Effect object
+	//sf::Clock clock;
+	//sf::Shader shader;
+	//shader.loadFromFile("wave.vert", "blur.frag");
+
 	while (window.isOpen())
 	{
+
+		/*
+		float x = static_cast<float>(sf::Mouse::getPosition(window).x) / window.getSize().x;
+		float y = static_cast<float>(sf::Mouse::getPosition(window).y) / window.getSize().y;
+
+		std::cout << x;
+		shader.setUniform("wave_phase", clock.getElapsedTime().asSeconds());
+		shader.setUniform("wave_amplitude", sf::Vector2f(x * 40, y * 40));
+		shader.setUniform("blur_radius", (x + y) * 0.0008f);
+		*/
+
 		window.clear(sf::Color::Black);
 
 		//draw..
@@ -50,8 +65,8 @@ void DLASimulationThread(DLASimulation const & refDLAObj, sf::RenderWindow const
 int main(int argc, char * argv[]) 
 {
 	//window size
-	float r = 5.;
-	int width = 200 * r, height = 200 * r, N = 5000;
+	float r = 10.;
+	int width = 500 * r, height = 500 * r, N = 1000000;
 
 	//DLA simulation intitalization
 	DLASimulation DLAObj((float)width, (float)height, N, r);
@@ -74,6 +89,7 @@ int main(int argc, char * argv[])
 	//SFLM event loop
 	while (window.isOpen())
 	{
+
 		sf::Event event;
 		while (window.pollEvent(event))
 		{
