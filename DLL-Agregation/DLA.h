@@ -1,9 +1,12 @@
+#include <vector>
+#include <algorithm>
+
 class Particle;
 
 using particle_map_el = struct {
 	bool isStucked = false;
-	Particle* particles[6] = { NULL, NULL, NULL, NULL, NULL, NULL };
-	unsigned short int part_count = 6;
+	Particle* particles[255] = { NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
+	unsigned short int part_count = 255;
 };
 
 class Particle {
@@ -162,8 +165,12 @@ public:
 			++index_of_removable;
 		}
 
+		
 		//remove stucked particles from free_particle array
-		for (auto index : particles_index_to_remove)
+		//TODO probably problem is here.. cos when we delete one index.. higher indexes are moving down for 1 position - solved!
+		std::sort(particles_index_to_remove.begin(), particles_index_to_remove.end());
+		std::reverse(particles_index_to_remove.begin(), particles_index_to_remove.end());
+		for (int index : particles_index_to_remove) 
 			free_particles.erase(free_particles.begin() + index);
 
 		//update drawable array of particles
